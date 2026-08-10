@@ -37,7 +37,10 @@ If unset, default is EC.
     :  Create an octet key pair (for **"Ed25519"** curve)
 
     **RSA**
-    :  Create an **RSA** keypair`,
+    :  Create an **RSA** keypair
+
+    **ML-DSA**
+    :  Create an **ML-DSA** (FIPS 204) keypair for post-quantum signatures. The **--curve** flag must be 44, 65, or 87 (default: 65).`,
 	}
 
 	// Size is the flag to set the key size.
@@ -66,7 +69,11 @@ unset, default is P-256 for EC keys and Ed25519 for OKP keys.
 		:  NIST P-521 Curve
 
 		**Ed25519**
-		:  Ed25519 Curve`,
+		:  Ed25519 Curve
+
+		**44, 65, 87**
+		:  ML-DSA (FIPS 204) security levels (used with **ML-DSA** kty)
+`,
 	}
 
 	// Subtle is the flag required for delicate operations.

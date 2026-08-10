@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/pem"
@@ -417,6 +418,14 @@ func validateIssuerKey(crt *x509.Certificate, signer crypto.Signer) error {
 		}
 	case ed25519.PublicKey:
 		pk, ok := signer.Public().(ed25519.PublicKey)
+		if !ok {
+			return errors.New("private key type does not match issuer public key type")
+		}
+		if !pub.Equal(pk) {
+			return errors.New("private key does not match issuer public key")
+		}
+	case *mldsa.PublicKey:
+		pk, ok := signer.Public().(*mldsa.PublicKey)
 		if !ok {
 			return errors.New("private key type does not match issuer public key type")
 		}

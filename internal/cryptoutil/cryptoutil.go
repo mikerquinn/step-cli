@@ -4,6 +4,7 @@ import (
 	"crypto"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/mldsa"
 	"crypto/elliptic"
 	"crypto/rsa"
 	"crypto/x509"
@@ -197,7 +198,7 @@ func IsX509Signer(signer crypto.Signer) bool {
 		}
 	}
 	switch pub.(type) {
-	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey:
+	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *mldsa.PublicKey:
 		return true
 	default:
 		return false

@@ -2,6 +2,7 @@ package certificate
 
 import (
 	"crypto"
+	"crypto/mldsa"
 	"crypto/x509"
 	"encoding/pem"
 	"time"
@@ -786,6 +787,25 @@ func parseOrCreateKey(ctx *cli.Context) (crypto.PublicKey, crypto.Signer, error)
 		if insecureMode { // put keyutil in insecure mode, allowing RSA keys shorter than 2048 bits
 			undoInsecure := keyutil.Insecure()
 			defer undoInsecure()
+		}
+		// Handle ML-DSA key generation (not yet in go.step.sm/crypto/keyutil)
+		if kty == "ML-DSA" {
+			var params mldsa.Parameters
+			switch crv {
+			case "44":
+				params = mldsa.MLDSA44()
+			case "65":
+				params = mldsa.MLDSA65()
+			case "87":
+				params = mldsa.MLDSA87()
+			default:
+				return nil, nil, errors.Errorf("invalid ML-DSA curve %s", crv)
+			}
+			priv, err := mldsa.GenerateKey(params)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "error generating ML-DSA key")
+			}
+			return priv.Public(), priv, nil
 		}
 		pub, priv, err := keyutil.GenerateKeyPair(kty, crv, size)
 		if err != nil {
