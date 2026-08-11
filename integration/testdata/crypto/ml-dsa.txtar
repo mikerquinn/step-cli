@@ -1,0 +1,182 @@
+# ML-DSA (FIPS 204) integration tests
+# Tests all 3 security levels: 44 (curve 44), 65 (curve 65, default), 87 (curve 87)
+
+# ============================================================
+# Key Generation
+# ============================================================
+
+# ML-DSA-65 keypair (default curve)
+exec step crypto keypair --password-file password.txt --kty ML-DSA mldsa65.pub mldsa65.priv
+check_mldsa_key mldsa65.pub mldsa65.priv MLDSA65
+
+# ML-DSA-44 keypair
+exec step crypto keypair --password-file password.txt --kty ML-DSA --curve 44 mldsa44.pub mldsa44.priv
+check_mldsa_key mldsa44.pub mldsa44.priv MLDSA44
+
+# ML-DSA-87 keypair
+exec step crypto keypair --password-file password.txt --kty ML-DSA --curve 87 mldsa87.pub mldsa87.priv
+check_mldsa_key mldsa87.pub mldsa87.priv MLDSA87
+
+# no-password with insecure
+exec step crypto keypair --no-password --insecure --kty ML-DSA --curve 65 mldsa65-np.pub mldsa65-np.priv
+check_mldsa_key mldsa65-np.pub mldsa65-np.priv MLDSA65
+
+# ============================================================
+# Key Sign/Verify (unprotected key, no terminal)
+# ============================================================
+
+# Create test message
+exec sh -c 'echo "test message for signing" > msg.txt'
+
+# ML-DSA-65 sign (unprotected key) - save sig to file
+exec sh -c 'step crypto key sign --key=mldsa65-np.priv msg.txt > sig65.b64'
+
+# ML-DSA-65 verify
+exec sh -c 'step crypto key verify --key=mldsa65-np.pub --signature="$(cat sig65.b64)" msg.txt'
+stdout 'true'
+
+# ML-DSA-44 sign
+exec sh -c 'step crypto key sign --key=mldsa44.priv --password-file=password.txt msg.txt > sig44.b64'
+
+# ML-DSA-44 verify
+exec sh -c 'step crypto key verify --key=mldsa44.pub --signature="$(cat sig44.b64)" msg.txt'
+stdout 'true'
+
+# ML-DSA-87 sign
+exec sh -c 'step crypto key sign --key=mldsa87.priv --password-file=password.txt msg.txt > sig87.b64'
+
+# ML-DSA-87 verify
+exec sh -c 'step crypto key verify --key=mldsa87.pub --signature="$(cat sig87.b64)" msg.txt'
+stdout 'true'
+
+# Verify tampered message fails
+exec sh -c 'echo "tampered message" > tampered.txt'
+! exec sh -c 'step crypto key verify --key=mldsa65-np.pub --signature="$(cat sig65.b64)" tampered.txt'
+stderr 'false'
+
+# ============================================================
+# Key Inspect
+# ============================================================
+
+# ML-DSA-65 public key inspect
+exec sh -c 'step crypto key inspect mldsa65.pub | grep "ML-DSA Public-Key"'
+
+# ML-DSA-65 private key inspect
+exec sh -c 'step crypto key inspect --password-file=password.txt mldsa65.priv | grep "ML-DSA Private-Key"'
+
+# ============================================================
+# Key Public
+# ============================================================
+
+# Extract public key from private key
+exec step crypto key public mldsa65-np.priv --out mldsa65-extracted.pub
+exec grep 'BEGIN PUBLIC KEY' mldsa65-extracted.pub
+
+# Extracted public key matches original
+exec sh -c 'step crypto key inspect mldsa65.pub | grep -c ":" > orig_count.txt'
+exec sh -c 'step crypto key inspect mldsa65-extracted.pub | grep -c ":" > ext_count.txt'
+exec sh -c 'test "$(cat orig_count.txt)" = "$(cat ext_count.txt)"'
+
+# ============================================================
+# Key Fingerprint
+# ============================================================
+
+# ML-DSA-65 PKIX fingerprint
+exec sh -c 'step crypto key fingerprint mldsa65.pub | grep "^SHA256:" > mldsa65-fp.txt'
+exec sh -c 'test -f mldsa65-fp.txt'
+
+# ML-DSA-65 private key fingerprint (should match public key)
+exec sh -c 'step crypto key fingerprint --password-file=password.txt mldsa65.priv | grep "^SHA256:" > mldsa65-fp-priv.txt'
+exec sh -c 'test -f mldsa65-fp-priv.txt'
+exec diff mldsa65-fp.txt mldsa65-fp-priv.txt
+
+# PKIX format fingerprint
+exec sh -c 'step crypto key fingerprint --pkix mldsa65.pub | grep "^SHA256:"'
+
+# ============================================================
+# Key Format: DER
+# ============================================================
+
+# Convert private key to DER (protected key)
+exec sh -c 'step crypto key format --insecure --der --password-file=password.txt mldsa65.priv --out=mldsa65.der 2>/dev/null'
+exec sh -c 'test -f mldsa65.der'
+
+# Convert DER back to PEM (no-password since DER is already PKCS#8)
+exec step crypto key format --no-password --insecure --pem --out=mldsa65-der-back.pem mldsa65.der
+exec grep 'BEGIN PRIVATE KEY' mldsa65-der-back.pem
+
+# ============================================================
+# Key Format: JWK
+# ============================================================
+
+# Convert private key to JWK (no password) - save stdout to file
+exec sh -c 'step crypto key format --jwk --no-password --insecure mldsa65-np.priv > mldsa65.jwk'
+check_mldsa_jwk mldsa65.jwk MLDSA65
+
+# ============================================================
+# JWK Create
+# ============================================================
+
+# ML-DSA-65 JWK create
+exec step crypto jwk create --kty ML-DSA --curve 65 --alg MLDSA-65 --password-file=password.txt mldsa65-jwk.pub mldsa65-jwk.priv
+check_mldsa_key mldsa65-jwk.pub mldsa65-jwk.priv MLDSA65
+
+# ML-DSA-44 JWK create
+exec step crypto jwk create --kty ML-DSA --curve 44 --alg MLDSA-44 --password-file=password.txt mldsa44-jwk.pub mldsa44-jwk.priv
+check_mldsa_key mldsa44-jwk.pub mldsa44-jwk.priv MLDSA44
+
+# ML-DSA-87 JWK create
+exec step crypto jwk create --kty ML-DSA --curve 87 --alg MLDSA-87 --password-file=password.txt mldsa87-jwk.pub mldsa87-jwk.priv
+check_mldsa_key mldsa87-jwk.pub mldsa87-jwk.priv MLDSA87
+
+# --size incompatible with ML-DSA
+! exec step crypto jwk create --kty ML-DSA --curve 65 --size 1024 fail.pub fail.priv
+stderr 'flag ''--size'' is incompatible with ''--kty ML-DSA'''
+
+# ============================================================
+# Certificate Creation
+# ============================================================
+
+# Debug: check available certificate subcommands
+exec sh -c 'step certificate create --help > cert-create-help.txt'
+exec grep 'NAME' cert-create-help.txt
+
+# ECDSA Root CA (sanity check)
+exec step certificate create --no-password --insecure --profile=root-ca EC_Sanity_CA ec-sanity.crt ec-sanity.key
+grep 'BEGIN CERTIFICATE' ec-sanity.crt
+
+# ML-DSA-65 Root CA
+exec step certificate create --kty=ML-DSA --curve=65 --no-password --insecure --profile=root-ca 'ML-DSA-65 Root CA' mldsa65-root.crt mldsa65-root.key
+exec grep 'BEGIN CERTIFICATE' mldsa65-root.crt
+exec grep 'BEGIN PRIVATE KEY' mldsa65-root.key
+
+# ML-DSA-65 Intermediate CA (signed by ML-DSA root)
+exec step certificate create --kty=ML-DSA --curve=65 --no-password --insecure --profile=intermediate-ca --ca=mldsa65-root.crt --ca-key=mldsa65-root.key 'ML-DSA-65 Intermediate' mldsa65-inter.crt mldsa65-inter.key
+exec grep 'BEGIN CERTIFICATE' mldsa65-inter.crt
+
+# ML-DSA-65 Leaf certificate
+exec step certificate create --kty=ML-DSA --curve=65 --no-password --insecure --profile=leaf --ca=mldsa65-inter.crt --ca-key=mldsa65-inter.key --san leaf.example.com 'ML-DSA-65 Leaf' mldsa65-leaf.crt mldsa65-leaf.key
+exec grep 'BEGIN CERTIFICATE' mldsa65-leaf.crt
+
+# Verify full chain
+exec sh -c 'cat mldsa65-inter.crt mldsa65-root.crt > chain.crt'
+exec step certificate verify mldsa65-leaf.crt --roots chain.crt --verbose
+stdout 'certficiate is valid'
+
+# ============================================================
+# Mixed Chain (EC Root → ML-DSA Intermediate → ML-DSA Leaf)
+# ============================================================
+
+# ECDSA Root CA
+exec step certificate create --kty=EC --curve=P-256 --no-password --insecure --profile=root-ca 'EC Root CA' ec-root.crt ec-root.key
+
+# ML-DSA Intermediate signed by EC Root
+exec step certificate create --kty=ML-DSA --curve=65 --no-password --insecure --profile=intermediate-ca --ca=ec-root.crt --ca-key=ec-root.key 'ML-DSA-65 Intermediate' ec-inter.crt ec-inter.key
+
+# ML-DSA Leaf signed by ML-DSA Intermediate
+exec step certificate create --kty=ML-DSA --curve=65 --no-password --insecure --profile=leaf --ca=ec-inter.crt --ca-key=ec-inter.key --san leaf.example.com 'ML-DSA-65 Leaf' ec-leaf.crt ec-leaf.key
+
+# Verify mixed chain
+exec sh -c 'cat ec-inter.crt ec-root.crt > ec-chain.crt'
+exec step certificate verify ec-leaf.crt --roots ec-chain.crt --verbose
+stdout 'certficiate is valid'

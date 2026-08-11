@@ -148,7 +148,15 @@ func signAction(ctx *cli.Context) error {
 		return errs.FileError(err, input)
 	}
 
-	key, err := pemutil.Read(keyFile)
+	passFile := ctx.String("password-file")
+	var key interface{}
+	if passFile != "" {
+		key, err = pemutil.Read(keyFile,
+			pemutil.WithPasswordFile(passFile),
+		)
+	} else {
+		key, err = pemutil.Read(keyFile)
+	}
 	if err != nil {
 		return err
 	}

@@ -573,3 +573,95 @@ func createTokenUsingOpenSSL(t *testing.T, header, payload, key string) string {
 	require.NoError(t, err)
 	return string(jwt)
 }
+
+// ============================================================
+// ML-DSA (FIPS 204) Tests
+// ============================================================
+
+func TestCryptoMLDSA(t *testing.T) {
+	testscript.Run(t, testscript.Params{
+		Files: []string{"testdata/crypto/ml-dsa.txtar"},
+		Setup: func(e *testscript.Env) error {
+			return os.WriteFile(filepath.Join(e.Cd, "password.txt"), []byte("password"), 0600)
+		},
+		Cmds: map[string]func(ts *testscript.TestScript, neg bool, args []string){
+			"check_mldsa_key":  checkMLDSAKey,
+			"check_mldsa_jwk":  checkMLDSAJWK,
+		},
+	})
+}
+
+// checkMLDSAKey validates that the public/private key pair is a valid ML-DSA key
+// of the expected security level (MLDSA44/65/87).
+func checkMLDSAKey(ts *testscript.TestScript, _ bool, args []string) {
+	if len(args) < 3 {
+		ts.Fatalf("expected at least 3 arguments, got %d", len(args))
+	}
+
+	pub, err := jose.ParseKey([]byte(ts.ReadFile(args[0])))
+	ts.Check(err)
+	priv, err := jose.ParseKey([]byte(ts.ReadFile(args[1])), jose.WithPassword([]byte("password")))
+	ts.Check(err)
+
+	// Verify the key type has Bytes() method (mldsa.PublicKey / mldsa.PrivateKey)
+	if _, ok := pub.Key.(interface{ Bytes() []byte }); !ok {
+		ts.Fatalf("expected ML-DSA public key, got %T", pub.Key)
+	}
+	if _, ok := priv.Key.(interface{ Bytes() []byte }); !ok {
+		ts.Fatalf("expected ML-DSA private key, got %T", priv.Key)
+	}
+
+	// Verify the crv from JSON marshaling matches expected level
+	pubJSON, err := json.Marshal(pub)
+	ts.Check(err)
+	var pubRaw map[string]interface{}
+	err = json.Unmarshal(pubJSON, &pubRaw)
+	ts.Check(err)
+	expectedCrv := strings.ToUpper(args[2])
+	actualCrv, ok := pubRaw["crv"].(string)
+	if !ok {
+		ts.Fatalf("crv field missing from public key JSON")
+	}
+	actualCrv = strings.ToUpper(actualCrv)
+	if actualCrv != expectedCrv {
+		ts.Fatalf("expected curve %s, got %s", expectedCrv, actualCrv)
+	}
+
+	// Verify thumbprints match
+	pubHash, err := pub.Thumbprint(crypto.SHA1)
+	ts.Check(err)
+	privHash, err := priv.Thumbprint(crypto.SHA1)
+	ts.Check(err)
+	if !bytes.Equal(pubHash, privHash) {
+		ts.Fatalf("ML-DSA public and private key thumbprints do not match")
+	}
+}
+
+// checkMLDSAJWK validates that a JWK file contains a valid ML-DSA key.
+func checkMLDSAJWK(ts *testscript.TestScript, _ bool, args []string) {
+	if len(args) < 2 {
+		ts.Fatalf("expected at least 2 arguments, got %d", len(args))
+	}
+
+	b := []byte(ts.ReadFile(args[0]))
+
+	// Parse the raw JSON to check kty field
+	var rawJWK map[string]interface{}
+	err := json.Unmarshal(b, &rawJWK)
+	ts.Check(err)
+
+	kty, ok := rawJWK["kty"].(string)
+	if !ok || kty != "ML-DSA" {
+		ts.Fatalf("expected ML-DSA kty, got %q", kty)
+	}
+
+	expectedCrv := strings.ToUpper(args[1])
+	actualCrv, ok := rawJWK["crv"].(string)
+	if !ok {
+		ts.Fatalf("crv field missing from JWK")
+	}
+	actualCrv = strings.ToUpper(actualCrv)
+	if actualCrv != expectedCrv {
+		ts.Fatalf("expected curve %s, got %s", expectedCrv, actualCrv)
+	}
+}
