@@ -104,6 +104,17 @@ func decryptAction(ctx *cli.Context) error {
 		options = append(options, jose.WithKid(kid))
 	}
 
+	// For non-PBES2 algorithms, pass password to jose.ReadKey for encrypted keys
+	var password string
+	if !isPBES2 && passwordFile != "" {
+		var err error
+		password, err = utils.ReadStringPasswordFromFile(passwordFile)
+		if err != nil {
+			return err
+		}
+		options = append(options, jose.WithPassword([]byte(password)))
+	}
+
 	// Read key from --key or --jwks
 	var pbes2Key []byte
 	var jwk *jose.JSONWebKey
