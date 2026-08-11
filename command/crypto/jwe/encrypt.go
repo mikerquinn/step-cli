@@ -101,7 +101,6 @@ options must match unless the **--subtle** flag is also passed.
     :  ML-KEM-1024 (FIPS 203) key encapsulation
     :  Content encryption key is encapsulated using ML-KEM-1024
     :  Shared secret is 48 bytes (compatible with A256GCM content encryption)`,
-            },
 			},
 			cli.StringFlag{
 				Name:  "enc, encryption-algorithm",

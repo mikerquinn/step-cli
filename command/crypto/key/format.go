@@ -474,26 +474,27 @@ func convertToJWK(ctx *cli.Context, key interface{}) ([]byte, error) {
 	case *mlkem.EncapsulationKey768, *mlkem.EncapsulationKey1024:
 		return b, nil
 	case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey, *mldsa.PrivateKey:
-		if ctx.Bool("no-password") {
-			return b, nil
-		}
+		return encryptPrivateKey(ctx, b)
 	case *mlkem.DecapsulationKey768, *mlkem.DecapsulationKey1024:
-		if ctx.Bool("no-password") {
-			return b, nil
-		}
-
-		opts := []jose.Option{
-			jose.WithContentType("jwk+json"),
-		}
-		if passFile := ctx.String("password-file"); passFile != "" {
-			opts = append(opts, jose.WithPasswordFile(passFile))
-		}
-		jwe, err := jose.Encrypt(b, opts...)
-		if err != nil {
-			return nil, err
-		}
-		return []byte(jwe.FullSerialize()), nil
+		return encryptPrivateKey(ctx, b)
 	default:
 		return nil, errors.Errorf("unsupported key type %T", key)
 	}
+}
+
+func encryptPrivateKey(ctx *cli.Context, b []byte) ([]byte, error) {
+	if ctx.Bool("no-password") {
+		return b, nil
+	}
+	opts := []jose.Option{
+		jose.WithContentType("jwk+json"),
+	}
+	if passFile := ctx.String("password-file"); passFile != "" {
+		opts = append(opts, jose.WithPasswordFile(passFile))
+	}
+	jwe, err := jose.Encrypt(b, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return []byte(jwe.FullSerialize()), nil
 }

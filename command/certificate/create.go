@@ -6,6 +6,7 @@ import (
 	"crypto/mlkem"
 	"crypto/x509"
 	"encoding/pem"
+	"io"
 	"time"
 
 	"github.com/pkg/errors"
@@ -23,6 +24,29 @@ import (
 	"github.com/smallstep/cli/internal/cryptoutil"
 	"github.com/smallstep/cli/utils"
 )
+
+// cryptoSigner wraps an ML-KEM private key to implement crypto.Signer
+type cryptoSigner struct {
+	pub  crypto.PublicKey
+	priv interface{}
+}
+
+func (s *cryptoSigner) Public() crypto.PublicKey {
+	return s.pub
+}
+
+func (s *cryptoSigner) Sign(rand io.Reader, digest []byte, opts crypto.SignerOpts) ([]byte, error) {
+	switch pk := s.priv.(type) {
+	case *mlkem.DecapsulationKey768:
+		_, ct := pk.EncapsulationKey().Encapsulate()
+		return ct, nil
+	case *mlkem.DecapsulationKey1024:
+		_, ct := pk.EncapsulationKey().Encapsulate()
+		return ct, nil
+	default:
+		return nil, errors.Errorf("unsupported key type %T", s.priv)
+	}
+}
 
 const (
 	// Supported profiles
@@ -814,14 +838,10 @@ func parseOrCreateKey(ctx *cli.Context) (crypto.PublicKey, crypto.Signer, error)
 			if err != nil {
 				return nil, nil, errors.Wrap(err, "error generating ML-KEM key")
 			}
-			switch k := priv.(type) {
-			case *mlkem.DecapsulationKey768:
-				return k.EncapsulationKey(), k, nil
-			case *mlkem.DecapsulationKey1024:
-				return k.EncapsulationKey(), k, nil
-			default:
-				return nil, nil, errors.Errorf("unsupported ML-KEM key type %T", priv)
-			}
+			pubKey := priv.(interface{ EncapsulationKey() *mlkem.EncapsulationKey768 }).EncapsulationKey()
+			// Wrap ML-KEM private key as crypto.Signer
+			s := &cryptoSigner{pub: pubKey, priv: priv}
+			return pubKey, s, nil
 		}
 		pub, priv, err := keyutil.GenerateKeyPair(kty, crv, size)
 		if err != nil {

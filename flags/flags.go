@@ -77,12 +77,13 @@ unset, default is P-256 for EC keys and Ed25519 for OKP keys.
 		**44, 65, 87**
 		:  ML-DSA (FIPS 204) security levels (used with **ML-DSA** kty)
 
-			**ML-KEM-768**
+		**ML-KEM-768**
 		:  ML-KEM (FIPS 203) security level 3 (used with **MLKEM** kty)
 
 		**ML-KEM-1024**
 		:  ML-KEM (FIPS 203) security level 4 (used with **MLKEM** kty)
-`,
+	`,
+	}
 
 	// Subtle is the flag required for delicate operations.
 	Subtle = cli.BoolFlag{
