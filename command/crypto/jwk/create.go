@@ -466,8 +466,12 @@ func createAction(ctx *cli.Context) (err error) {
 				return errs.MinSizeFlag(ctx, "size", "0")
 			}
 		}
+	case "ML-DSA":
+		if ctx.IsSet("size") {
+			return errs.IncompatibleFlag(ctx, "size", "--kty ML-DSA")
+		}
 	default:
-		return errs.InvalidFlagValue(ctx, "kty", kty, "EC, RSA, OKP, or oct")
+		return errs.InvalidFlagValue(ctx, "kty", kty, "EC, RSA, OKP, oct, or ML-DSA")
 	}
 
 	// Generate or read secrets

@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -181,6 +182,9 @@ func signAction(ctx *cli.Context) error {
 		}
 		digest = hash(opts.HashFunc(), b)
 	case ed25519.PrivateKey:
+		opts = crypto.Hash(0)
+		digest = b
+	case *mldsa.PrivateKey:
 		opts = crypto.Hash(0)
 		digest = b
 	default:

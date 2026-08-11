@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
@@ -346,7 +347,7 @@ func convertToPEM(ctx *cli.Context, key interface{}) (b []byte, err error) {
 	if !ctx.Bool("no-password") {
 		switch key.(type) {
 		case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey:
-		case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey:
+		case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey, *mldsa.PrivateKey:
 			if passFile := ctx.String("password-file"); passFile != "" {
 				opts = append(opts, pemutil.WithPasswordFile(passFile))
 			} else {
@@ -380,9 +381,9 @@ func convertToDER(ctx *cli.Context, key interface{}) (b []byte, err error) {
 		} else {
 			b, err = x509.MarshalECPrivateKey(k)
 		}
-	case ed25519.PrivateKey: // always PKCS#8
+	case ed25519.PrivateKey, *mldsa.PrivateKey: // always PKCS#8
 		b, err = x509.MarshalPKCS8PrivateKey(key)
-	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey: // always PKIX
+	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *mldsa.PublicKey: // always PKIX
 		b, err = x509.MarshalPKIXPublicKey(key)
 	default:
 		return nil, errors.Errorf("unsupported key type %T", key)
@@ -398,7 +399,7 @@ func convertToSSH(ctx *cli.Context, key interface{}) ([]byte, error) {
 			return nil, errors.Wrap(err, "error converting public key")
 		}
 		return ssh.MarshalAuthorizedKey(k), nil
-	case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey:
+	case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey, *mldsa.PrivateKey:
 		opts := []pemutil.Options{
 			pemutil.WithOpenSSH(true),
 		}
@@ -428,9 +429,9 @@ func convertToJWK(ctx *cli.Context, key interface{}) ([]byte, error) {
 	}
 
 	switch key.(type) {
-	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey:
+	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *mldsa.PublicKey:
 		return b, nil
-	case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey:
+	case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey, *mldsa.PrivateKey:
 		if ctx.Bool("no-password") {
 			return b, nil
 		}

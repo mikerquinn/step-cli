@@ -19,7 +19,7 @@ stderr 'not enough positional arguments were provided in ''step crypto keypair <
 
 # invalid key type
 ! exec step crypto keypair --kty foo  error.pub error.priv
-stderr 'invalid value ''foo'' for flag ''--kty''; options are RSA, EC, OK'
+stderr 'invalid value ''foo'' for flag ''--kty''; options are RSA, EC, OKP, ML-DSA'
 
 
 # no-password without insecure

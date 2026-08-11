@@ -5,6 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/elliptic"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"encoding/base64"
 	"fmt"
@@ -151,6 +152,8 @@ func verifyAction(ctx *cli.Context) error {
 		return printAndReturn(rsa.VerifyPKCS1v15(k, opts.HashFunc(), digest, sig) == nil)
 	case ed25519.PublicKey:
 		return printAndReturn(ed25519.Verify(k, b, sig))
+	case *mldsa.PublicKey:
+		return printAndReturn(mldsa.Verify(k, b, sig, nil) == nil)
 	default:
 		return errors.Errorf("unsupported public key %s", keyFile)
 	}

@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/ecdsa"
 	"crypto/ed25519"
+	"crypto/mldsa"
 	"crypto/rsa"
 	"fmt"
 	"math/big"
@@ -137,6 +138,16 @@ func inspectAction(ctx *cli.Context) error {
 		fmt.Printf("Ed25519 Private-Key: (%d bit)\n", 8*len(k))
 		bytesPrinter("Public", k[32:])
 		bytesPrinter("Private", k[:32])
+	case *mldsa.PublicKey:
+		fmt.Printf("ML-DSA Public-Key: (%d bit)\n", len(k.Bytes())*8)
+		bytesPrinter("Public", k.Bytes())
+	case *mldsa.PrivateKey:
+		pubKey := k.Public()
+		if pk, ok := pubKey.(*mldsa.PublicKey); ok {
+			fmt.Printf("ML-DSA Private-Key: (%d bit)\n", len(pk.Bytes())*8)
+			bytesPrinter("Public", pk.Bytes())
+		}
+		bytesPrinter("Private", k.Bytes())
 	default:
 		return errors.Errorf("unsupported key type '%T'", k)
 	}
