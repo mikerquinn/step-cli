@@ -90,7 +90,18 @@ options must match unless the **--subtle** flag is also passed.
     :  PBES2 with HMAC SHA-256 and "A192KW" wrapping
 
     **PBES2-HS512+A256KW**
-	:  PBES2 with HMAC SHA-256 and "A256KW" wrapping`,
+	:  PBES2 with HMAC SHA-256 and "A256KW" wrapping
+
+    **ML-KEM-768**
+    :  ML-KEM-768 (FIPS 203) key encapsulation
+    :  Content encryption key is encapsulated using ML-KEM-768
+    :  Shared secret is 32 bytes (compatible with A256GCM content encryption)
+
+    **ML-KEM-1024**
+    :  ML-KEM-1024 (FIPS 203) key encapsulation
+    :  Content encryption key is encapsulated using ML-KEM-1024
+    :  Shared secret is 48 bytes (compatible with A256GCM content encryption)`,
+            },
 			},
 			cli.StringFlag{
 				Name:  "enc, encryption-algorithm",
@@ -351,6 +362,10 @@ func getRecipientAlg(ctx *cli.Context, alg string) (jose.KeyAlgorithm, error) {
 		return jose.PBES2_HS384_A192KW, nil
 	case "PBES2-HS512+A256KW":
 		return jose.PBES2_HS512_A256KW, nil
+	case "ML-KEM-768":
+		return jose.ML_KEM_768, nil
+	case "ML-KEM-1024":
+		return jose.ML_KEM_1024, nil
 	default:
 		return "", errs.InvalidFlagValue(ctx, "alg", alg, "")
 	}

@@ -40,7 +40,10 @@ If unset, default is EC.
     :  Create an **RSA** keypair
 
     **ML-DSA**
-    :  Create an **ML-DSA** (FIPS 204) keypair for post-quantum signatures. The **--curve** flag must be 44, 65, or 87 (default: 65).`,
+    :  Create an **ML-DSA** (FIPS 204) keypair for post-quantum signatures. The **--curve** flag must be 44, 65, or 87 (default: 65).
+
+    **MLKEM**
+    :  Create an **ML-KEM** (FIPS 203) key encapsulation keypair for JWE encryption. The **--curve** flag must be ML-KEM-768 or ML-KEM-1024 (default: ML-KEM-768).`,
 	}
 
 	// Size is the flag to set the key size.
@@ -73,8 +76,13 @@ unset, default is P-256 for EC keys and Ed25519 for OKP keys.
 
 		**44, 65, 87**
 		:  ML-DSA (FIPS 204) security levels (used with **ML-DSA** kty)
+
+			**ML-KEM-768**
+		:  ML-KEM (FIPS 203) security level 3 (used with **MLKEM** kty)
+
+		**ML-KEM-1024**
+		:  ML-KEM (FIPS 203) security level 4 (used with **MLKEM** kty)
 `,
-	}
 
 	// Subtle is the flag required for delicate operations.
 	Subtle = cli.BoolFlag{

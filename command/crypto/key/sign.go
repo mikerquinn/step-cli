@@ -6,6 +6,7 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/mldsa"
+	"crypto/mlkem"
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/base64"
@@ -159,6 +160,29 @@ func signAction(ctx *cli.Context) error {
 	}
 	if err != nil {
 		return err
+	}
+
+	// Handle ML-KEM signing (uses SignDeterministic, not crypto.Signer.Sign)
+	switch key.(type) {
+	case *mlkem.DecapsulationKey768, *mlkem.DecapsulationKey1024:
+		switch k := key.(type) {
+		case *mlkem.DecapsulationKey768:
+			_, ciphertext := k.EncapsulationKey().Encapsulate()
+			if ctx.Bool("raw") {
+				os.Stdout.Write(ciphertext)
+			} else {
+				fmt.Println(base64.StdEncoding.EncodeToString(ciphertext))
+			}
+			return nil
+		case *mlkem.DecapsulationKey1024:
+			_, ciphertext := k.EncapsulationKey().Encapsulate()
+			if ctx.Bool("raw") {
+				os.Stdout.Write(ciphertext)
+			} else {
+				fmt.Println(base64.StdEncoding.EncodeToString(ciphertext))
+			}
+			return nil
+		}
 	}
 
 	signer, ok := key.(crypto.Signer)

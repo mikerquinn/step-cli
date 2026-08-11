@@ -3,6 +3,7 @@ package certificate
 import (
 	"crypto"
 	"crypto/mldsa"
+	"crypto/mlkem"
 	"crypto/x509"
 	"encoding/pem"
 	"time"
@@ -806,6 +807,21 @@ func parseOrCreateKey(ctx *cli.Context) (crypto.PublicKey, crypto.Signer, error)
 				return nil, nil, errors.Wrap(err, "error generating ML-DSA key")
 			}
 			return priv.Public(), priv, nil
+		}
+		// Handle ML-KEM key generation
+		if kty == "MLKEM" {
+			priv, err := keyutil.GenerateKey("MLKEM", crv, 0)
+			if err != nil {
+				return nil, nil, errors.Wrap(err, "error generating ML-KEM key")
+			}
+			switch k := priv.(type) {
+			case *mlkem.DecapsulationKey768:
+				return k.EncapsulationKey(), k, nil
+			case *mlkem.DecapsulationKey1024:
+				return k.EncapsulationKey(), k, nil
+			default:
+				return nil, nil, errors.Errorf("unsupported ML-KEM key type %T", priv)
+			}
 		}
 		pub, priv, err := keyutil.GenerateKeyPair(kty, crv, size)
 		if err != nil {

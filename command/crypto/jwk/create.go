@@ -184,6 +184,9 @@ If unset, default is EC.
 
     **RSA**
     :  Create an **RSA** keypair
+
+    **MLKEM**
+    :  Create an **ML-KEM** (FIPS 203) keypair for JWE encryption. Use **--crv** to select the security level: **ML-KEM-768** (default) or **ML-KEM-1024**.
 `,
 			},
 			flags.Size,
@@ -470,8 +473,22 @@ func createAction(ctx *cli.Context) (err error) {
 		if ctx.IsSet("size") {
 			return errs.IncompatibleFlag(ctx, "size", "--kty ML-DSA")
 		}
+	case "MLKEM":
+		if ctx.IsSet("size") {
+			return errs.IncompatibleFlag(ctx, "size", "--kty MLKEM")
+		}
+		// Validate curve if set
+		if !ctx.IsSet("crv") {
+			crv = "ML-KEM-768"
+		}
+		switch crv {
+		case "ML-KEM-768", "ML-KEM-1024":
+			// ok
+		default:
+			return errs.IncompatibleFlagValueWithFlagValue(ctx, "kty", kty, "crv", crv, "ML-KEM-768, ML-KEM-1024")
+		}
 	default:
-		return errs.InvalidFlagValue(ctx, "kty", kty, "EC, RSA, OKP, oct, or ML-DSA")
+		return errs.InvalidFlagValue(ctx, "kty", kty, "EC, RSA, OKP, oct, ML-DSA, or MLKEM")
 	}
 
 	// Generate or read secrets
