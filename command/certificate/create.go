@@ -2,7 +2,6 @@ package certificate
 
 import (
 	"crypto"
-	"crypto/mldsa"
 	"crypto/x509"
 	"crypto/x509/pkix"
 	"encoding/pem"
@@ -832,25 +831,6 @@ func parseOrCreateKey(ctx *cli.Context) (crypto.PublicKey, interface{}, error) {
 			undoInsecure := keyutil.Insecure()
 			defer undoInsecure()
 		}
-		// Handle ML-DSA key generation (not yet in go.step.sm/crypto/keyutil)
-		if kty == "ML-DSA" {
-			var params mldsa.Parameters
-			switch crv {
-			case "44":
-				params = mldsa.MLDSA44()
-			case "65":
-				params = mldsa.MLDSA65()
-			case "87":
-				params = mldsa.MLDSA87()
-			default:
-				return nil, nil, errors.Errorf("invalid ML-DSA curve %s", crv)
-			}
-			priv, err := mldsa.GenerateKey(params)
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "error generating ML-DSA key")
-			}
-			return priv.Public(), priv, nil
-		}
 
 		pub, priv, err := keyutil.GenerateKeyPair(kty, crv, size)
 		if err != nil {
@@ -941,7 +921,6 @@ func parseSigner(ctx *cli.Context, defaultSigner interface{}) (*x509.Certificate
 			return nil, defaultSigner.(crypto.Signer), nil
 		}
 		return nil, nil, nil
-		return nil, defaultSigner.(crypto.Signer), nil
 	}
 
 	// Leaf, intermediate or template with
