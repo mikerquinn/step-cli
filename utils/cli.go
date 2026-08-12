@@ -54,32 +54,32 @@ func GetKeyDetailsFromCLI(ctx *cli.Context, insecure bool, ktyKey, curveKey, siz
 					curveKey, crv, "P-256, P-384, P-521")
 			}
 		case "ML-DSA":
-		if ctx.IsSet("size") {
-			return kty, crv, size, errs.IncompatibleFlagValue(ctx, sizeKey, ktyKey, kty)
-		}
-		if !ctx.IsSet("curve") {
-			crv = "65"
-		}
-		switch crv {
-		case "44", "65", "87": // ok
-		default:
-			return kty, crv, size, errs.IncompatibleFlagValueWithFlagValue(ctx, ktyKey, kty,
-				curveKey, crv, "44, 65, 87")
-		}
-	case "MLKEM":
-		if ctx.IsSet("size") {
-			return kty, crv, size, errs.IncompatibleFlagValue(ctx, sizeKey, ktyKey, kty)
-		}
-		if !ctx.IsSet("curve") {
-			crv = "ML-KEM-768"
-		}
-		switch crv {
-		case "ML-KEM-768", "ML-KEM-1024": // ok
-		default:
-			return kty, crv, size, errs.IncompatibleFlagValueWithFlagValue(ctx, ktyKey, kty,
-				curveKey, crv, "ML-KEM-768, ML-KEM-1024")
-		}
-	case "OKP":
+			if ctx.IsSet("size") {
+				return kty, crv, size, errs.IncompatibleFlagValue(ctx, sizeKey, ktyKey, kty)
+			}
+			if !ctx.IsSet("curve") {
+				crv = "65"
+			}
+			switch crv {
+			case "44", "65", "87": // ok
+			default:
+				return kty, crv, size, errs.IncompatibleFlagValueWithFlagValue(ctx, ktyKey, kty,
+					curveKey, crv, "44, 65, 87")
+			}
+		case "MLKEM":
+			if ctx.IsSet("size") {
+				return kty, crv, size, errs.IncompatibleFlagValue(ctx, sizeKey, ktyKey, kty)
+			}
+			if !ctx.IsSet("curve") {
+				crv = "ML-KEM-768"
+			}
+			switch crv {
+			case "ML-KEM-768", "ML-KEM-1024": // ok
+			default:
+				return kty, crv, size, errs.IncompatibleFlagValueWithFlagValue(ctx, ktyKey, kty,
+					curveKey, crv, "ML-KEM-768, ML-KEM-1024")
+			}
+		case "OKP":
 			if ctx.IsSet("size") {
 				return kty, crv, size, errs.IncompatibleFlagValue(ctx, sizeKey, ktyKey, kty)
 			}
