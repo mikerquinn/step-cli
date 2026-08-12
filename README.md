@@ -1,5 +1,50 @@
 # Step CLI Post Quantum Fork
-This is a fork of step-cli to support ML-DSA that is now in version 1.27 of go.  To build this package you will need at least go 1.27 (not out but available in RC form).  It is very much a work in progress but it's reached a somewhat functional stage at this point.  Nevertheless, this was done quick and dirty with AI for the purpose of creating PQC sandboxes for testing and such.  It's not been vetted much so, DO NOT USE THIS IN PRODUCTION!!!!! 
+
+This is a fork of step-cli to support **ML-DSA (FIPS 204)** with Go 1.27.
+
+## Build Requirements
+
+- **Go 1.27** (or later) - required for `crypto/mldsa` in the standard library
+- `CGO_ENABLED=0` - builds are pure software, no CGO required
+
+## Forked Dependencies
+
+This project uses three forked dependencies for ML-DSA support. The following `go.mod` replace directives are required:
+
+| Replace Directive | Fork | Purpose |
+|---|---|---|
+| `go.step.sm/crypto => github.com/mikerquinn/stepcrypto-pqc` | [stepcrypto-pqc](https://github.com/mikerquinn/stepcrypto-pqc) | ML-DSA support in keyutil, pemutil, and jose packages (key generation, PEM serialization, JWK handling) |
+| `github.com/go-jose/go-jose/v3 => github.com/mikerquinn/go-jose-v3-pqc/v3` | [go-jose-v3-pqc](https://github.com/mikerquinn/go-jose-v3-pqc) | ML-DSA JWS signature algorithms (MLDSA-44, MLDSA-65, MLDSA-87) and JWK handling |
+| `golang.org/x/crypto => github.com/mikerquinn/x-crypto-pqc` | [x-crypto-pqc](https://github.com/mikerquinn/x-crypto-pqc) | ML-DSA SSH key types (ml-dsa-44, ml-dsa-65, ml-dsa-87) and SSH certificate support |
+
+All three forks are required because upstream modules (go.step.sm/crypto, go-jose v3, golang.org/x/crypto) do not yet include ML-DSA support.
+
+## Quick Build
+
+```bash
+git clone https://github.com/mikerquinn/step-cli.git
+cd step-cli
+CGO_ENABLED=0 go build -o step ./cmd/step
+```
+
+## ML-DSA Usage
+
+```bash
+# Generate ML-DSA keypair (curve: 44, 65, or 87)
+step crypto keypair --kty ML-DSA --curve 65 --no-password --insecure key.pem
+
+# Sign a file
+step crypto key sign --key key.pem file.txt > sig.b64
+
+# Verify signature
+step crypto key verify --key key.pub.pem --sig sig.b64 file.txt
+
+# Create ML-DSA certificate
+step certificate create --kty ML-DSA --curve 65 --no-password --insecure \
+  --profile root-ca 'ML-DSA Root' root.crt root.key
+```
+
+> **Note**: This is a work in progress, built with AI for PQC sandbox testing. DO NOT USE IN PRODUCTION. 
 
 # Step CLI
 
