@@ -1,3 +1,6 @@
+# Step CLI Post Quantum Fork
+This is a fork of step-cli to support the ML-KEM and ML-DSA that are now supported by version 1.27 of go.  To build this package you will need at least go 1.27 (not out but available in RC form).  It is very much a work in progress but it's reached a somewhat functional stage at this point.  Nevertheless, this was done quick and dirty with AI for the purpose of creating PQC sandboxes for testing and such.  It's not been vetted much so, DO NOT USE THIS IN PRODUCTION!!!!! 
+
 # Step CLI
 
 [![GitHub release](https://img.shields.io/github/release/smallstep/cli.svg)](https://github.com/smallstep/cli/releases)
