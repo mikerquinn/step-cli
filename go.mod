@@ -148,6 +148,6 @@ require (
 
 replace go.step.sm/crypto => github.com/mikerquinn/stepcrypto-pqc v0.87.0-pqc
 
-replace github.com/go-jose/go-jose/v3 => /tmp/go-jose-fork
+replace github.com/go-jose/go-jose/v3 => github.com/mikerquinn/go-jose-v3-pqc/v3 v3.0.5
 
 replace golang.org/x/crypto => github.com/mikerquinn/x-crypto-pqc v0.54.0-pqc
