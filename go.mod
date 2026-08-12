@@ -146,8 +146,8 @@ require (
 	k8s.io/klog/v2 v2.130.1 // indirect
 )
 
-replace go.step.sm/crypto => /home/piuser/smallstep/stepcrypto-pqc
+replace go.step.sm/crypto => github.com/mikerquinn/stepcrypto-pqc v0.87.0-pqc
 
 replace github.com/go-jose/go-jose/v3 => /tmp/go-jose-fork
 
-replace golang.org/x/crypto => /home/piuser/smallstep/x-crypto-pqc
+replace golang.org/x/crypto => github.com/mikerquinn/x-crypto-pqc v0.54.0-pqc
