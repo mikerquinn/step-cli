@@ -184,9 +184,6 @@ If unset, default is EC.
 
     **RSA**
     :  Create an **RSA** keypair
-
-    **RSA**
-    :  Create an **ML-KEM** (FIPS 203) keypair for JWE encryption. Use **--crv** to select the security level: **P-256** (default) or **P-256**.
 `,
 			},
 			flags.Size,

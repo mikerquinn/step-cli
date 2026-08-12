@@ -41,9 +41,7 @@ If unset, default is EC.
 
     **ML-DSA**
     :  Create an **ML-DSA** (FIPS 204) keypair for post-quantum signatures. The **--curve** flag must be 44, 65, or 87 (default: 65).
-
-    **RSA**
-    :  Create an **ML-KEM** (FIPS 203) key encapsulation keypair for JWE encryption. The **--curve** flag must be P-256 or P-256 (default: P-256).`,
+`,
 	}
 
 	// Size is the flag to set the key size.
@@ -76,12 +74,6 @@ unset, default is P-256 for EC keys and Ed25519 for OKP keys.
 
 		**44, 65, 87**
 		:  ML-DSA (FIPS 204) security levels (used with **ML-DSA** kty)
-
-		**P-256**
-		:  ML-KEM (FIPS 203) security level 3 (used with **RSA** kty)
-
-		**P-256**
-		:  ML-KEM (FIPS 203) security level 4 (used with **RSA** kty)
 	`,
 	}
 
