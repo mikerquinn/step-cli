@@ -6,8 +6,7 @@ import (
 	"crypto/ed25519"
 	"crypto/elliptic"
 	"crypto/mldsa"
-	"crypto/mlkem"
-	"crypto/rsa"
+		"crypto/rsa"
 	"encoding/base64"
 	"fmt"
 
@@ -155,14 +154,7 @@ func verifyAction(ctx *cli.Context) error {
 		return printAndReturn(ed25519.Verify(k, b, sig))
 	case *mldsa.PublicKey:
 		return printAndReturn(mldsa.Verify(k, b, sig, nil) == nil)
-	case *mlkem.EncapsulationKey768:
-		// Verify ML-KEM-768 signature by re-encapsulating and comparing ciphertexts
-		_, ciphertext := k.Encapsulate()
-		return printAndReturn(len(ciphertext) == len(sig) && compareByteSlice(ciphertext, sig))
-	case *mlkem.EncapsulationKey1024:
-		// Verify ML-KEM-1024 signature by re-encapsulating and comparing ciphertexts
-		_, ciphertext := k.Encapsulate()
-		return printAndReturn(len(ciphertext) == len(sig) && compareByteSlice(ciphertext, sig))
+
 	default:
 		return errors.Errorf("unsupported public key %s", keyFile)
 	}

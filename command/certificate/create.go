@@ -570,13 +570,6 @@ func createAction(ctx *cli.Context) error {
 		return err
 	}
 
-	// Check if ML-KEM key pair is used (KEM only, cannot sign)
-	_, isMLKEM768 := priv.(*keyutil.MlkemKeyPair)
-	_, isMLKEM1024 := priv.(*keyutil.Mlkem1024KeyPair)
-	if (isMLKEM768 || isMLKEM1024) && !skipCSRSignature {
-		return errors.New("ML-KEM keys cannot be used to sign certificates or CSRs; use ML-DSA (or a classical algorithm)")
-	}
-
 	// Create certificate request
 	if ctx.Bool("csr") {
 		if priv == nil {
@@ -619,8 +612,7 @@ func createAction(ctx *cli.Context) error {
 		data.SetUserData(userData)
 
 		var cr *x509.CertificateRequest
-		if isMLKEM768 || isMLKEM1024 {
-			// ML-KEM: create unsigned CSR from public key
+		if priv == nil {
 			cr, err = createUnsignedCSR(subject, sans, pub)
 			if err != nil {
 				return err
@@ -681,7 +673,7 @@ func createAction(ctx *cli.Context) error {
 	if err != nil {
 		return err
 	}
-	// signer is nil for ML-KEM keys (they can't sign certificates)
+	// signer is nil when using public key
 
 	// Use subject as default SAN when using a template or for leaf and self-signed certificates.
 	if len(sans) == 0 && (template != "" || profile == profileLeaf || profile == profileSelfSigned) {
@@ -724,15 +716,13 @@ func createAction(ctx *cli.Context) error {
 		certTemplate = certificate.GetCertificate()
 	} else {
 		// Create X.509 certificate used as base for the certificate
-		// ML-KEM keys cannot sign, so we create a CSR without signature
 		var cr *x509.CertificateRequest
-		if !isMLKEM768 && !isMLKEM1024 {
+		if priv != nil {
 			cr, err = x509util.CreateCertificateRequest(subject, sans, priv.(crypto.Signer))
 			if err != nil {
 				return err
 			}
 		} else {
-			// ML-KEM: create unsigned CSR
 			cr, err = createUnsignedCSR(subject, sans, pub)
 			if err != nil {
 				return err
@@ -785,16 +775,8 @@ func createAction(ctx *cli.Context) error {
 
 	// Save key and certificate request
 	if keyFile != "" && priv != nil {
-		_, isMlkem := priv.(*keyutil.MlkemKeyPair)
-		_, isMlkem1024 := priv.(*keyutil.Mlkem1024KeyPair)
-		if !isMlkem && !isMlkem1024 {
-			if signer, ok := priv.(crypto.Signer); ok {
-				if !cryptoutil.IsKMSSigner(signer) {
-					if err := savePrivateKey(ctx, keyFile, priv, noPass); err != nil {
-						return err
-					}
-				}
-			} else {
+		if signer, ok := priv.(crypto.Signer); ok {
+			if !cryptoutil.IsKMSSigner(signer) {
 				if err := savePrivateKey(ctx, keyFile, priv, noPass); err != nil {
 					return err
 				}
@@ -850,27 +832,6 @@ func parseOrCreateKey(ctx *cli.Context) (crypto.PublicKey, interface{}, error) {
 			undoInsecure := keyutil.Insecure()
 			defer undoInsecure()
 		}
-		// Handle ML-KEM key generation (KEM only, not a crypto.Signer)
-		if kty == "MLKEM" {
-			var pub crypto.PublicKey
-			var priv interface{}
-			switch crv {
-			case "ML-KEM-768":
-				pub, priv, err = keyutil.GenerateKeyPair("MLKEM", crv, size)
-			case "ML-KEM-1024":
-				pub, priv, err = keyutil.GenerateKeyPair("MLKEM", crv, size)
-			default:
-				return nil, nil, errors.Errorf("invalid ML-KEM curve %s", crv)
-			}
-			if err != nil {
-				return nil, nil, errors.Wrap(err, "error generating ML-KEM key")
-			}
-			// ML-KEM keys cannot sign, but we need a crypto.Signer for certificate creation.
-			// Return the encapsulation key as the signer's public key and the key pair as private.
-			// Certificate creation will verify that the key type matches before signing.
-			return pub, priv, nil
-		}
-
 		// Handle ML-DSA key generation (not yet in go.step.sm/crypto/keyutil)
 		if kty == "ML-DSA" {
 			var params mldsa.Parameters
@@ -941,7 +902,7 @@ func parseOrCreateKey(ctx *cli.Context) (crypto.PublicKey, interface{}, error) {
 
 // parseSigner returns the parent certificate and key for leaf and intermediate
 // certificates. When a template is used, it will return the key only if the
-// flags --ca and --ca-key are passed. Returns nil signer for ML-KEM keys.
+// flags --ca and --ca-key are passed. Returns nil signer when using public key.
 func parseSigner(ctx *cli.Context, defaultSigner interface{}) (*x509.Certificate, crypto.Signer, error) {
 	var (
 		caCert   = ctx.String("ca")
@@ -975,11 +936,11 @@ func parseSigner(ctx *cli.Context, defaultSigner interface{}) (*x509.Certificate
 
 	// Root, self-signed, or template with no parent.
 	if caCert == "" && caKey == "" {
-		// ML-KEM keys cannot sign, return nil signer
-		switch defaultSigner.(type) {
-		case *keyutil.MlkemKeyPair, *keyutil.Mlkem1024KeyPair:
-			return nil, nil, nil
+		// Return nil signer when using public key
+		if defaultSigner != nil {
+			return nil, defaultSigner.(crypto.Signer), nil
 		}
+		return nil, nil, nil
 		return nil, defaultSigner.(crypto.Signer), nil
 	}
 

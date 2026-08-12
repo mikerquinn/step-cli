@@ -5,8 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/mldsa"
-	"crypto/mlkem"
-	"crypto/rsa"
+		"crypto/rsa"
 	"crypto/x509"
 	"encoding/json"
 	"encoding/pem"
@@ -359,14 +358,6 @@ func convertToPEM(ctx *cli.Context, key interface{}) (b []byte, err error) {
 					return ui.PromptPassword(s, ui.WithValidateNotEmpty())
 				}))
 			}
-		case *mlkem.DecapsulationKey768, *mlkem.DecapsulationKey1024:
-			if passFile := ctx.String("password-file"); passFile != "" {
-				opts = append(opts, pemutil.WithPasswordFile(passFile))
-			} else {
-				opts = append(opts, pemutil.WithPasswordPrompt("Please enter the password to encrypt the private key", func(s string) ([]byte, error) {
-					return ui.PromptPassword(s, ui.WithValidateNotEmpty())
-				}))
-			}
 		default:
 			return nil, errors.Errorf("unsupported key type %T", key)
 		}
@@ -395,11 +386,7 @@ func convertToDER(ctx *cli.Context, key interface{}) (b []byte, err error) {
 		}
 	case ed25519.PrivateKey, *mldsa.PrivateKey: // always PKCS#8
 		b, err = x509.MarshalPKCS8PrivateKey(key)
-	case *mlkem.DecapsulationKey768, *mlkem.DecapsulationKey1024: // always PKCS#8
-		b, err = x509.MarshalPKCS8PrivateKey(key)
 	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *mldsa.PublicKey: // always PKIX
-		b, err = x509.MarshalPKIXPublicKey(key)
-	case *mlkem.EncapsulationKey768, *mlkem.EncapsulationKey1024:
 		b, err = x509.MarshalPKIXPublicKey(key)
 	default:
 		return nil, errors.Errorf("unsupported key type %T", key)
@@ -415,31 +402,7 @@ func convertToSSH(ctx *cli.Context, key interface{}) ([]byte, error) {
 			return nil, errors.Wrap(err, "error converting public key")
 		}
 		return ssh.MarshalAuthorizedKey(k), nil
-	case *mlkem.EncapsulationKey768, *mlkem.EncapsulationKey1024:
-		k, err := ssh.NewPublicKey(key)
-		if err != nil {
-			return nil, errors.Wrap(err, "error converting public key")
-		}
-		return ssh.MarshalAuthorizedKey(k), nil
 	case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey, *mldsa.PrivateKey:
-		opts := []pemutil.Options{
-			pemutil.WithOpenSSH(true),
-		}
-		if !ctx.Bool("no-password") {
-			if passFile := ctx.String("password-file"); passFile != "" {
-				opts = append(opts, pemutil.WithPasswordFile(passFile))
-			} else {
-				opts = append(opts, pemutil.WithPasswordPrompt("Please enter the password to encrypt the private key", func(s string) ([]byte, error) {
-					return ui.PromptPassword(s, ui.WithValidateNotEmpty())
-				}))
-			}
-		}
-		block, err := pemutil.Serialize(key, opts...)
-		if err != nil {
-			return nil, err
-		}
-		return pem.EncodeToMemory(block), nil
-	case *mlkem.DecapsulationKey768, *mlkem.DecapsulationKey1024:
 		opts := []pemutil.Options{
 			pemutil.WithOpenSSH(true),
 		}
@@ -471,11 +434,7 @@ func convertToJWK(ctx *cli.Context, key interface{}) ([]byte, error) {
 	switch key.(type) {
 	case *ecdsa.PublicKey, *rsa.PublicKey, ed25519.PublicKey, *mldsa.PublicKey:
 		return b, nil
-	case *mlkem.EncapsulationKey768, *mlkem.EncapsulationKey1024:
-		return b, nil
 	case *rsa.PrivateKey, *ecdsa.PrivateKey, ed25519.PrivateKey, *mldsa.PrivateKey:
-		return encryptPrivateKey(ctx, b)
-	case *mlkem.DecapsulationKey768, *mlkem.DecapsulationKey1024:
 		return encryptPrivateKey(ctx, b)
 	default:
 		return nil, errors.Errorf("unsupported key type %T", key)

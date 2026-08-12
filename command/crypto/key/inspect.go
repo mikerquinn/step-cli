@@ -5,8 +5,7 @@ import (
 	"crypto/ecdsa"
 	"crypto/ed25519"
 	"crypto/mldsa"
-	"crypto/mlkem"
-	"crypto/rsa"
+		"crypto/rsa"
 	"fmt"
 	"math/big"
 
@@ -148,22 +147,6 @@ func inspectAction(ctx *cli.Context) error {
 			fmt.Printf("ML-DSA Private-Key: (%d bit)\n", len(pk.Bytes())*8)
 			bytesPrinter("Public", pk.Bytes())
 		}
-		bytesPrinter("Private", k.Bytes())
-	case *mlkem.EncapsulationKey768:
-		fmt.Printf("ML-KEM-768 Public-Key: (%d bit)\n", len(k.Bytes())*8)
-		bytesPrinter("Public", k.Bytes())
-	case *mlkem.DecapsulationKey768:
-		fmt.Printf("ML-KEM-768 Private-Key: (%d bit)\n", len(k.Bytes())*8)
-		pub := k.EncapsulationKey()
-		bytesPrinter("Public", pub.Bytes())
-		bytesPrinter("Private", k.Bytes())
-	case *mlkem.EncapsulationKey1024:
-		fmt.Printf("ML-KEM-1024 Public-Key: (%d bit)\n", len(k.Bytes())*8)
-		bytesPrinter("Public", k.Bytes())
-	case *mlkem.DecapsulationKey1024:
-		fmt.Printf("ML-KEM-1024 Private-Key: (%d bit)\n", len(k.Bytes())*8)
-		pub := k.EncapsulationKey()
-		bytesPrinter("Public", pub.Bytes())
 		bytesPrinter("Private", k.Bytes())
 	default:
 		return errors.Errorf("unsupported key type '%T'", k)
