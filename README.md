@@ -2,6 +2,9 @@
 
 This is a fork of step-cli to support **ML-DSA (FIPS 204)** with Go 1.27.
 
+This is super quick and dirty and should NOT EVER be used in production!
+It is for playing around with PQC.
+
 ## Build Requirements
 
 - **Go 1.27** (or later) - required for `crypto/mldsa` in the standard library
